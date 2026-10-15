@@ -1,0 +1,164 @@
+# =============================================================================
+# questions.yaml — fake-news-jev canonical Jev question set
+# =============================================================================
+#
+# 19 versioned, atomic, unambiguous questions posed to the Jev typed-decision
+# model on every article. Together they form the feature vector for the
+# downstream meta-classifier (Stage 2) which emits a calibrated P(fake).
+#
+# VERSIONING & A/B TESTING
+# -----------------------
+# - Top-level `version: 1` is the SET version. Bump only when the overall
+#   question set changes shape (add/remove/rename a question). The
+#   meta-classifier must be retrained from scratch on every SET bump.
+# - Per-question `version` is the PROMPT version. Bump it when a prompt's
+#   semantics change (e.g. tightening "anonymous sources" to "anonymous
+#   sources for the *central* claim"). Same question name + new prompt
+#   version = A/B-testable: keep both versions in the pipeline, route a
+#   fraction of traffic to the new version, and compare downstream
+#   P(fake) calibration via the existing eval harness.
+# - Adding a brand-new question increments the SET version AND starts at
+#   prompt version 1; the meta-classifier sees a new feature column.
+#
+# Answer types
+# -----------
+# - noul   : yes/no probability. value ∈ [0,1]. `probability` = calibrated
+#            confidence that the YES probability itself is correct.
+# - score  : numeric in [min, max].
+# - choice : categorical from `options`.
+# =============================================================================
+
+version: 1
+
+questions:
+  # ---------------------------------------------------------------------------
+  # 11 NOUL questions — yes/no probability (value 0..1)
+  # ---------------------------------------------------------------------------
+  - name: is_fake_overall
+    type: noul
+    prompt: "Is this article overall misinformation or fabricated news?"
+    version: 1
+
+  - name: is_clickbait
+    type: noul
+    prompt: "Does the headline use clickbait phrasing (curiosity gap, ALL-CAPS, exclamation chains, 'you won't believe', 'shocking', 'this one trick')?"
+    version: 1
+
+  - name: has_unverified_claims
+    type: noul
+    prompt: "Does the article make factual claims that are not attributable to any verifiable source?"
+    version: 1
+
+  - name: uses_anonymous_sources
+    type: noul
+    prompt: "Does the article rely on anonymous or unnamed sources for its central claims?"
+    version: 1
+
+  - name: contains_conspiracy_framing
+    type: noul
+    prompt: "Does the article frame events as a hidden conspiracy or cover-up ('they don't want you to know', 'deep state', 'wake up', 'cover-up')?"
+    version: 1
+
+  - name: cites_verifiable_sources
+    type: noul
+    prompt: "Does the article cite identifiable, verifiable sources (named outlets like Reuters/AP, named studies, official documents)?"
+    version: 1
+
+  - name: is_satire
+    type: noul
+    prompt: "Is the article clearly satirical or parody (e.g. The Onion, Babylon Bee, nottheonion)?"
+    version: 1
+
+  - name: is_opinion_not_news
+    type: noul
+    prompt: "Is this primarily an opinion or editorial piece rather than reported news?"
+    version: 1
+
+  - name: has_statistical_claims
+    type: noul
+    prompt: "Does the article assert numeric statistics or percentages without citing a dataset or methodology?"
+    version: 1
+
+  - name: impersonates_authority
+    type: noul
+    prompt: "Does the article impersonate or fabricate an official authority figure or institution (fake quote, fake agency, false credentials)?"
+    version: 1
+
+  - name: headline_contradicts_body
+    type: noul
+    prompt: "Does the headline materially contradict the body of the article?"
+    version: 1
+
+  # ---------------------------------------------------------------------------
+  # 5 SCORE questions — numeric, bounded
+  # ---------------------------------------------------------------------------
+  - name: emotional_intensity
+    type: score
+    prompt: "Rate the emotional intensity of the article's language (0=neutral, 10=hysterical)."
+    version: 1
+    min: 0.0
+    max: 10.0
+
+  - name: sensationalism
+    type: score
+    prompt: "Rate the sensationalism of the headline and lede (0=factual, 10=tabloid)."
+    version: 1
+    min: 0.0
+    max: 10.0
+
+  - name: factual_specificity
+    type: score
+    prompt: "Rate how specific and verifiable the article's factual claims are (0=vague, 10=precisely sourced)."
+    version: 1
+    min: 0.0
+    max: 10.0
+
+  - name: political_bias
+    type: score
+    prompt: "Rate political bias on a scale from -5 (strongly left) to +5 (strongly right)."
+    version: 1
+    min: -5.0
+    max: 5.0
+
+  - name: writing_professionalism
+    type: score
+    prompt: "Rate the writing professionalism of the article (0=blogspam, 10=AP-style)."
+    version: 1
+    min: 0.0
+    max: 10.0
+
+  # ---------------------------------------------------------------------------
+  # 3 CHOICE questions — categorical, closed vocabulary
+  # ---------------------------------------------------------------------------
+  - name: topic
+    type: choice
+    prompt: "Classify the primary topic of the article."
+    version: 1
+    options:
+      - politics
+      - health
+      - finance
+      - science
+      - sports
+      - other
+
+  - name: claim_type
+    type: choice
+    prompt: "Classify the dominant type of claim made by the article."
+    version: 1
+    options:
+      - fact
+      - opinion
+      - prediction
+      - rumor
+
+  - name: manipulation_tactic
+    type: choice
+    prompt: "Identify the dominant manipulation tactic, if any."
+    version: 1
+    options:
+      - none
+      - fear
+      - outrage
+      - false_authority
+      - cherry_picking

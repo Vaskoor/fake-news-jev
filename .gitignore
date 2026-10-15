@@ -1,0 +1,98 @@
+# MIT License
+#
+# Copyright (c) 2024 Bhaskar Kaphle <kaphlebhaskar012345@gmail.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the Software
+# is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# =============================================================================
+# .gitignore — fake-news-jev
+# =============================================================================
+
+# --- Python -----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+MANIFEST
+wheels/
+pip-wheel-metadata/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --- Data + model artefacts (keep .gitkeep files for the directory layout) -
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/external/*
+!data/external/.gitkeep
+models/*
+!models/.gitkeep
+results/*
+!results/.gitkeep
+
+# --- Secrets / local config -------------------------------------------------
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# --- Logs -------------------------------------------------------------------
+*.log
+logs/
+api/logs/
+ui/logs/
+
+# --- Test / lint caches -----------------------------------------------------
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.cache
+
+# --- Jupyter ----------------------------------------------------------------
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- IDEs / OS --------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# --- Docker / compose local state ------------------------------------------
+.docker/

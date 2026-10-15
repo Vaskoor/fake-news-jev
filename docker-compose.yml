@@ -1,0 +1,91 @@
+# MIT License
+#
+# Copyright (c) 2024 Bhaskar Kaphle <kaphlebhaskar012345@gmail.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the Software
+# is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# =============================================================================
+# docker-compose.yml — fake-news-jev
+#
+# Two services sharing a single image:
+#   api : FastAPI (uvicorn) on :8000, healthcheck on /health
+#   ui  : Streamlit on :8501, healthcheck on the Streamlit heartbeat endpoint
+#
+# Volumes mount the persisted artefact directories (raw/processed data,
+# trained models, results). The `ui` service depends on `api` being healthy
+# before starting so the Streamlit UI can talk to a real backend.
+# =============================================================================
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fake-news-jev:latest
+    container_name: fake-news-jev-api
+    ports:
+      - "8000:8000"
+    environment:
+      JEV_PROVIDER: simulated
+      FAKE_NEWS_ENV: production
+      PYTHONPATH: /app/src
+    volumes:
+      - ./data/raw:/app/data/raw:ro
+      - ./data/processed:/app/data/processed
+      - ./data/external:/app/data/external:ro
+      - ./models:/app/models
+      - ./results:/app/results
+      - ./config:/app/config:ro
+    healthcheck:
+      test: ["CMD", "curl", "--silent", "--fail", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - fakenews
+
+  ui:
+    image: fake-news-jev:latest
+    container_name: fake-news-jev-ui
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8501:8501"
+    environment:
+      FAKE_NEWS_API_URL: http://api:8000
+      JEV_PROVIDER: simulated
+      PYTHONPATH: /app/src
+    entrypoint: ["python", "-m", "streamlit"]
+    command: ["run", "ui/app.py",
+              "--server.port=8501",
+              "--server.address=0.0.0.0",
+              "--server.headless=true",
+              "--browser.gatherUsageStats=false"]
+    volumes:
+      - ./config:/app/config:ro
+      - ./results:/app/results
+    healthcheck:
+      test: ["CMD", "curl", "--silent", "--fail",
+             "http://127.0.0.1:8501/_stcore/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - fakenews
+
+networks:
+  fakenews:
+    driver: bridge

@@ -1,0 +1,74 @@
+# =============================================================================
+# config.yaml — fake-news-jev pipeline configuration
+# =============================================================================
+# Loaded by `fakenews.config.load_config(path=None)`. Missing keys fall back
+# to the in-code defaults defined in src/fakenews/config.py. See the module
+# docstring there for the merge semantics.
+# =============================================================================
+
+project:
+  name: fake-news-jev
+  version: 0.1.0
+  seed: 42
+
+# --- Jev (Stage 1) provider selection ----------------------------------------
+# provider:
+#   simulated  -> deterministic heuristic backend (default; no API key)
+#   typesafe   -> Jev native HTTP API (request body: {state, questions:[{name,type,prompt}]})
+#   cloudflare -> Jev worker binding (request body: {state, qs:[{n,t,p}]}, X-Jev-Sig auth)
+#   openrouter -> OpenAI chat-completions wrapper around Jev-style prompts
+jev:
+  provider: simulated
+  api_key_env: JEV_API_KEY
+  endpoint: ""
+  timeout_s: 5
+  max_retries: 3
+  rate_limit_per_min: 60
+  cache_enabled: true
+
+# --- Decision thresholds (Stage 3) ------------------------------------------
+# p < real_max                          -> REAL
+# real_max <= p < fake_min              -> NEEDS_REVIEW  (also triggers evidence_check)
+# p >= fake_min                         -> FAKE
+decision:
+  real_max: 0.3
+  review_min: 0.3
+  fake_min: 0.8
+  evidence_check:
+    enabled: true
+    low: 0.3
+    high: 0.8
+
+# --- Meta-classifier (Stage 2) ----------------------------------------------
+model:
+  meta_classifier: lightgbm   # lightgbm | xgboost | logreg
+  calibration: isotonic       # isotonic | platt | none
+  tfidf_max_features: 5000
+  ngram_range: [1, 2]
+
+# --- Observability ----------------------------------------------------------
+logging:
+  level: INFO
+  format: json
+
+# Rule-based fallback classifier (used before any model is trained, and as the
+# pre-calibration scorer in the pipeline). Weights are tuned so that a clearly
+# real article (strong verifiable-source citation) scores below the REAL
+# threshold, while a clearly fake article (clickbait + anonymous sources +
+# conspiracy framing) scores in the NEEDS_REVIEW/FAKE band. cites_verifiable_sources
+# is an ANTI-fake signal (high value => less fake) so its weight is subtracted.
+fallback:
+  bias: -0.70
+  default_weight: 0.12
+  weights:
+    cites_verifiable_sources: 1.0
+    is_fake_overall: 0.45
+    is_clickbait: 0.28
+    uses_anonymous_sources: 0.22
+    contains_conspiracy_framing: 0.25
+    has_unverified_claims: 0.18
+    impersonates_authority: 0.18
+    headline_contradicts_body: 0.15
+    is_satire: 0.20
+    is_opinion_not_news: 0.08
+    has_statistical_claims: 0.05
